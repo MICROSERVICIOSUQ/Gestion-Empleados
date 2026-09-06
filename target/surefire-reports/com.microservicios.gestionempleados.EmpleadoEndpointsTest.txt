@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.microservicios.gestionempleados.EmpleadoEndpointsTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.762 s -- in com.microservicios.gestionempleados.EmpleadoEndpointsTest
+Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.343 s -- in com.microservicios.gestionempleados.EmpleadoEndpointsTest

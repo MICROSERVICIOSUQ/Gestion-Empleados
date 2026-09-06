@@ -20,6 +20,10 @@ public class EmpleadoRepository {
         return Optional.ofNullable(storage.get(id));
     }
 
+    public boolean existsById(String id) {
+        return storage.containsKey(id);
+    }
+
     public boolean existsByEmail(String email) {
         return storage.values().stream()
                 .anyMatch(e -> e.getEmail().equalsIgnoreCase(email));

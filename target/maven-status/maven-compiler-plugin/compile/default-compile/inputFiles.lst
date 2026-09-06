@@ -2,6 +2,8 @@ C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-emplead
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\EmailYaRegistradoException.java
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\EmpleadoNoEncontradoException.java
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\GlobalExceptionHandler.java
+C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\IdRequeridoException.java
+C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\IdYaRegistradoException.java
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\exception\NumeroEmpleadoYaRegistradoException.java
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\GestionEmpleadosApplication.java
 C:\Users\Milton Gómez\Universidad\Microservicios\microservicios\gestion-empleados\src\main\java\com\microservicios\gestionempleados\model\Empleado.java

@@ -25,6 +25,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
+    @ExceptionHandler({IdRequeridoException.class, IdYaRegistradoException.class})
+    public ResponseEntity<String> handleIdInvalido(RuntimeException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
     @ExceptionHandler({NoHandlerFoundException.class, HttpRequestMethodNotSupportedException.class})
     public ResponseEntity<String> handleRecursoNoEncontrado() {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Recurso no encontrado");
