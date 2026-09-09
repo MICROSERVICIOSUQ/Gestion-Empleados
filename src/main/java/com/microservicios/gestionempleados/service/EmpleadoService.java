@@ -2,7 +2,6 @@ package com.microservicios.gestionempleados.service;
 
 import com.microservicios.gestionempleados.exception.EmailYaRegistradoException;
 import com.microservicios.gestionempleados.exception.EmpleadoNoEncontradoException;
-import com.microservicios.gestionempleados.exception.IdRequeridoException;
 import com.microservicios.gestionempleados.exception.IdYaRegistradoException;
 import com.microservicios.gestionempleados.exception.NumeroEmpleadoYaRegistradoException;
 import com.microservicios.gestionempleados.model.Empleado;
@@ -19,13 +18,14 @@ public class EmpleadoService {
         this.repository = repository;
     }
 
+    /**
+     * La presencia y el formato de los campos ya los garantiza la validación
+     * declarativa del modelo ({@code @Valid} en el controller). Aquí solo se
+     * comprueban las reglas que dependen del estado del repositorio.
+     */
     public Empleado registrar(Empleado empleado) {
-        String id = empleado.getId();
-        if (id == null || id.isBlank()) {
-            throw new IdRequeridoException();
-        }
-        if (repository.existsById(id)) {
-            throw new IdYaRegistradoException(id);
+        if (repository.existsById(empleado.getId())) {
+            throw new IdYaRegistradoException(empleado.getId());
         }
         if (repository.existsByEmail(empleado.getEmail())) {
             throw new EmailYaRegistradoException(empleado.getEmail());

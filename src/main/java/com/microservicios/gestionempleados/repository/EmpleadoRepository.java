@@ -24,13 +24,16 @@ public class EmpleadoRepository {
         return storage.containsKey(id);
     }
 
+    // Las comprobaciones toleran valores nulos almacenados: un registro incompleto
+    // no debe hacer fallar las consultas posteriores.
     public boolean existsByEmail(String email) {
         return storage.values().stream()
-                .anyMatch(e -> e.getEmail().equalsIgnoreCase(email));
+                .anyMatch(e -> e.getEmail() != null && e.getEmail().equalsIgnoreCase(email));
     }
 
     public boolean existsByNumeroEmpleado(String numeroEmpleado) {
         return storage.values().stream()
-                .anyMatch(e -> e.getNumeroEmpleado().equals(numeroEmpleado));
+                .anyMatch(e -> e.getNumeroEmpleado() != null
+                        && e.getNumeroEmpleado().equals(numeroEmpleado));
     }
 }

@@ -1,15 +1,11 @@
 {
   "info": {
-    "name": "gestion-empleados - Reto 1",
-    "description": "Colección de pruebas del microservicio gestion-empleados.\n\nEL ID LO ENVÍA EL CLIENTE. No se autogenera: tú decides el id en el body del POST (ej: \"E001\") y con ese mismo id consultas en el GET.\n\nCubre registro exitoso, consulta existente, consulta inexistente, las validaciones de duplicados (id, email y numeroEmpleado), el id obligatorio y el manejo global de 404.\n\nVariable de la colección:\n- baseUrl: http://localhost:8080  (cámbiala si corres en otro puerto, ej: http://localhost:9090)\n\nOrden sugerido: ejecutar la colección completa con el Runner, de arriba hacia abajo. Los requests 2.x dependen de que 1.1 haya creado a E001.\n\nOJO: el almacenamiento es en memoria. Si reinicias el servicio, todo se borra y hay que volver a ejecutar 1.1.",
+    "name": "gestion-empleados",
+    "description": "Colección de pruebas del microservicio gestion-empleados.\n\nCONTRATO:\n- El id lo envía el cliente (no se autogenera).\n- Todos los campos del empleado son obligatorios.\n- Los errores se devuelven en JSON, nunca en texto plano.\n- 400 = la petición está mal formada o le faltan campos.\n- 409 = la petición es válida pero choca con datos ya existentes.\n\nVariable: baseUrl (por defecto http://localhost:8080).\n\nEjecuta primero '1.1 Registrar empleado (E001 - Juan)': las carpetas 2 y 3 dependen de que E001 exista.\n\nEl almacenamiento es en memoria: al reiniciar el servicio hay que volver a ejecutar 1.1.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080",
-      "type": "string"
-    }
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" }
   ],
   "item": [
     {
@@ -23,22 +19,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "const e = pm.response.json();",
+                  "",
+                  "pm.test('Conserva el id enviado (E001)', () => {",
+                  "    pm.expect(e.id).to.eql('E001');",
                   "});",
                   "",
-                  "const empleado = pm.response.json();",
+                  "pm.test('Estado ACTIVO', () => pm.expect(e.estado).to.eql('ACTIVO'));",
                   "",
-                  "pm.test('Conserva el id que envié (E001)', function () {",
-                  "    pm.expect(empleado.id).to.eql('E001');",
-                  "});",
-                  "",
-                  "pm.test('Estado ACTIVO', function () {",
-                  "    pm.expect(empleado.estado).to.eql('ACTIVO');",
-                  "});",
-                  "",
-                  "pm.test('La fecha se serializa como yyyy-MM-dd', function () {",
-                  "    pm.expect(empleado.fechaIngreso).to.eql('2026-02-10');",
+                  "pm.test('Fecha como yyyy-MM-dd', () => {",
+                  "    pm.expect(e.fechaIngreso).to.eql('2026-02-10');",
                   "});"
                 ]
               }
@@ -46,58 +38,32 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"E001\",\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan.perez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-001\",\n  \"cargo\": \"Desarrollador Senior\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-02-10\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/empleados",
               "host": ["{{baseUrl}}"],
               "path": ["empleados"]
             },
-            "description": "Registra un empleado nuevo. EL ID LO DEFINES TÚ.\n\nQUÉ ENVIAR EN EL BODY:\n- id               (String)  ej: \"E001\"  -> OBLIGATORIO y ÚNICO. Es la clave de consulta.\n- nombre           (String)  ej: \"Juan\"\n- apellido         (String)  ej: \"Pérez\"\n- email            (String)  ej: \"juan.perez@empresa.com\"  -> ÚNICO\n- numeroEmpleado   (String)  ej: \"EMP-2026-001\"            -> ÚNICO\n- cargo            (String)  ej: \"Desarrollador Senior\"\n- area             (String)  ej: \"Tecnología\"\n- departamentoId   (String)  ej: \"IT\"  (texto libre, no se valida contra otro servicio)\n- fechaIngreso     (LocalDate yyyy-MM-dd) ej: \"2026-02-10\"\n- estado           (String)  ej: \"ACTIVO\"\n\nSOBRE 'estado': el servicio SIEMPRE lo registra como ACTIVO (así lo pide el Reto 1). Puedes enviarlo o no; si envías EN_VACACIONES o RETIRADO se guardará igualmente como ACTIVO.\n\nFORMATO LIBRE DEL ID: \"E001\", \"EMP-1\", \"juan-perez\", un UUID que tú elijas... lo único que se valida es que no venga vacío y que no exista ya.\n\nRESPUESTA 200 OK: el empleado guardado, con tu mismo id."
+            "description": "Registra un empleado. TODOS los campos son obligatorios.\n\n- id              ej: \"E001\"            único, lo defines tú\n- nombre          ej: \"Juan\"\n- apellido        ej: \"Pérez\"\n- email           ej: \"juan.perez@empresa.com\"  único, con formato de correo\n- numeroEmpleado  ej: \"EMP-2026-001\"    único\n- cargo           ej: \"Desarrollador Senior\"\n- area            ej: \"Tecnología\"\n- departamentoId  ej: \"IT\"              texto libre\n- fechaIngreso    ej: \"2026-02-10\"      formato yyyy-MM-dd\n- estado          ej: \"ACTIVO\"          ACTIVO | EN_VACACIONES | RETIRADO\n\nOmitir cualquiera devuelve 400 indicando qué campo falta.\n\nNOTA sobre 'estado': es obligatorio enviarlo, pero el servicio lo normaliza siempre a ACTIVO en el registro."
           },
           "response": [
             {
-              "name": "200 OK - empleado creado",
+              "name": "200 OK",
               "originalRequest": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"id\": \"E001\",\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan.perez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-001\",\n  \"cargo\": \"Desarrollador Senior\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-02-10\",\n  \"estado\": \"ACTIVO\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"id\": \"E001\" }" },
+                "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] }
               },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
               "body": "{\n    \"id\": \"E001\",\n    \"nombre\": \"Juan\",\n    \"apellido\": \"Pérez\",\n    \"email\": \"juan.perez@empresa.com\",\n    \"numeroEmpleado\": \"EMP-2026-001\",\n    \"cargo\": \"Desarrollador Senior\",\n    \"area\": \"Tecnología\",\n    \"departamentoId\": \"IT\",\n    \"fechaIngreso\": \"2026-02-10\",\n    \"estado\": \"ACTIVO\"\n}"
             }
           ]
@@ -110,40 +76,22 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Conserva el id E002', function () {",
-                  "    pm.expect(pm.response.json().id).to.eql('E002');",
-                  "});"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Id E002', () => pm.expect(pm.response.json().id).to.eql('E002'));"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"E002\",\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Ramírez\",\n  \"email\": \"carlos.ramirez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-002\",\n  \"cargo\": \"Analista de Datos\",\n  \"area\": \"Finanzas\",\n  \"departamentoId\": \"FIN\",\n  \"fechaIngreso\": \"2026-03-15\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "Segundo empleado válido: id, email y numeroEmpleado todos distintos a los de E001.\n\nSirve para comprobar que el repositorio guarda varios empleados y que las validaciones de duplicados NO dan falsos positivos."
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "Segundo empleado con id, email y numeroEmpleado distintos. Comprueba que las validaciones de unicidad no dan falsos positivos."
           },
           "response": []
         },
@@ -155,15 +103,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "",
-                  "pm.test('Devuelve el empleado E001', function () {",
-                  "    const empleado = pm.response.json();",
-                  "    pm.expect(empleado.id).to.eql('E001');",
-                  "    pm.expect(empleado.email).to.eql('juan.perez@empresa.com');",
-                  "    pm.expect(empleado.numeroEmpleado).to.eql('EMP-2026-001');",
+                  "pm.test('Devuelve E001', () => {",
+                  "    const e = pm.response.json();",
+                  "    pm.expect(e.id).to.eql('E001');",
+                  "    pm.expect(e.email).to.eql('juan.perez@empresa.com');",
                   "});"
                 ]
               }
@@ -177,37 +122,14 @@
               "host": ["{{baseUrl}}"],
               "path": ["empleados", "E001"]
             },
-            "description": "Consulta un empleado por el id que TÚ definiste en el POST.\n\nQUÉ COLOCAR: el mismo id del registro, aquí 'E001'. Ya no hay que copiar ningún UUID: si registraste E001, consultas E001.\n\nPara consultar a Carlos: {{baseUrl}}/empleados/E002\n\nRESPUESTA 200 OK: el JSON completo del empleado."
+            "description": "Consulta por el id que definiste en el POST. Para Carlos: {{baseUrl}}/empleados/E002"
           },
-          "response": [
-            {
-              "name": "200 OK - empleado encontrado",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/empleados/E001",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados", "E001"]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n    \"id\": \"E001\",\n    \"nombre\": \"Juan\",\n    \"apellido\": \"Pérez\",\n    \"email\": \"juan.perez@empresa.com\",\n    \"numeroEmpleado\": \"EMP-2026-001\",\n    \"cargo\": \"Desarrollador Senior\",\n    \"area\": \"Tecnología\",\n    \"departamentoId\": \"IT\",\n    \"fechaIngreso\": \"2026-02-10\",\n    \"estado\": \"ACTIVO\"\n}"
-            }
-          ]
+          "response": []
         }
       ]
     },
     {
-      "name": "2. Validaciones (400 Bad Request)",
+      "name": "2. Conflictos (409)",
       "item": [
         {
           "name": "2.1 Id duplicado",
@@ -217,12 +139,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 400', function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
                   "",
-                  "pm.test('Mensaje descriptivo de id duplicado', function () {",
-                  "    pm.expect(pm.response.text()).to.eql(\"El id 'E001' ya está registrado\");",
+                  "const b = pm.response.json();",
+                  "pm.test('Cuerpo JSON de error', () => {",
+                  "    pm.expect(b.status).to.eql(409);",
+                  "    pm.expect(b.error).to.eql('Conflict');",
+                  "    pm.expect(b.message).to.eql(\"El id 'E001' ya está registrado\");",
+                  "    pm.expect(b.path).to.eql('/empleados');",
+                  "    pm.expect(b.timestamp).to.not.be.empty;",
                   "});"
                 ]
               }
@@ -230,59 +155,29 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"E001\",\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Empleado\",\n  \"email\": \"otro.correo@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-999\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "REQUIERE haber ejecutado antes '1.1'.\n\nEl id repite E001; el email y el numeroEmpleado son nuevos, así que el único conflicto posible es el id.\n\nEsta validación es importante: sin ella, un POST con un id existente SOBREESCRIBIRÍA al empleado anterior sin avisar.\n\nRESPUESTA 400 (texto plano):\nEl id 'E001' ya está registrado"
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "REQUIERE ejecutar antes 1.1.\n\nEl id repite E001; email y numeroEmpleado son nuevos, así que el único conflicto es el id.\n\nEs 409 y no 400 porque la petición está bien formada: el problema es que choca con datos ya existentes.\n\nSin esta validación, el POST sobrescribiría a Juan en silencio."
           },
           "response": [
             {
-              "name": "400 Bad Request - id duplicado",
+              "name": "409 Conflict",
               "originalRequest": {
                 "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"id\": \"E001\",\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Empleado\",\n  \"email\": \"otro.correo@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-999\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{ \"id\": \"E001\" }" },
+                "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] }
               },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "El id 'E001' ya está registrado"
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"timestamp\": \"2026-09-08T18:42:11.503-05:00\",\n    \"status\": 409,\n    \"error\": \"Conflict\",\n    \"message\": \"El id 'E001' ya está registrado\",\n    \"path\": \"/empleados\"\n}"
             }
           ]
         },
@@ -294,12 +189,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 400', function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
-                  "",
-                  "pm.test('Mensaje descriptivo de email duplicado', function () {",
-                  "    pm.expect(pm.response.text()).to.eql(\"El email 'juan.perez@empresa.com' ya está registrado\");",
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensaje de email duplicado', () => {",
+                  "    pm.expect(pm.response.json().message)",
+                  "      .to.eql(\"El email 'juan.perez@empresa.com' ya está registrado\");",
                   "});"
                 ]
               }
@@ -307,61 +200,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"E010\",\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"López\",\n  \"email\": \"juan.perez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-888\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "REQUIERE haber ejecutado antes '1.1'.\n\nEl id (E010) y el numeroEmpleado son nuevos; solo el email repite el de Juan.\n\nORDEN DE VALIDACIÓN: id -> email -> numeroEmpleado. Por eso este request usa un id libre, para que el error que salte sea el del email y no el del id.\n\nRESPUESTA 400 (texto plano):\nEl email 'juan.perez@empresa.com' ya está registrado\n\nNota: la comparación de email NO distingue mayúsculas. \"JUAN.PEREZ@EMPRESA.COM\" también da 400."
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "REQUIERE ejecutar antes 1.1.\n\nOrden de validación: id -> email -> numeroEmpleado. Por eso este request lleva un id libre (E010), para que el conflicto que salte sea el del email.\n\nLa comparación de email NO distingue mayúsculas: JUAN.PEREZ@EMPRESA.COM también da 409."
           },
-          "response": [
-            {
-              "name": "400 Bad Request - email duplicado",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"id\": \"E010\",\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"López\",\n  \"email\": \"juan.perez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-888\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "El email 'juan.perez@empresa.com' ya está registrado"
-            }
-          ]
+          "response": []
         },
         {
           "name": "2.3 numeroEmpleado duplicado",
@@ -371,12 +219,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 400', function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
-                  "",
-                  "pm.test('Mensaje descriptivo de numeroEmpleado duplicado', function () {",
-                  "    pm.expect(pm.response.text()).to.eql(\"El número de empleado 'EMP-2026-001' ya está registrado\");",
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensaje de numeroEmpleado duplicado', () => {",
+                  "    pm.expect(pm.response.json().message)",
+                  "      .to.eql(\"El número de empleado 'EMP-2026-001' ya está registrado\");",
                   "});"
                 ]
               }
@@ -384,158 +230,181 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"id\": \"E011\",\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"López\",\n  \"email\": \"pedro.lopez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-001\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "options": { "raw": { "language": "json" } }
             },
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "REQUIERE haber ejecutado antes '1.1'.\n\nEl id (E011) y el email son nuevos; solo el numeroEmpleado repite el de Juan.\n\nComo la validación corre id -> email -> numeroEmpleado, hay que dejar libres los dos primeros para poder ver este error.\n\nRESPUESTA 400 (texto plano):\nEl número de empleado 'EMP-2026-001' ya está registrado"
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "REQUIERE ejecutar antes 1.1.\n\nId y email libres para que el conflicto que salte sea el del numeroEmpleado."
           },
-          "response": [
-            {
-              "name": "400 Bad Request - numeroEmpleado duplicado",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"id\": \"E011\",\n  \"nombre\": \"Pedro\",\n  \"apellido\": \"López\",\n  \"email\": \"pedro.lopez@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-001\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Ventas\",\n  \"departamentoId\": \"VT\",\n  \"fechaIngreso\": \"2026-04-01\",\n  \"estado\": \"ACTIVO\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "El número de empleado 'EMP-2026-001' ya está registrado"
-            }
-          ]
-        },
-        {
-          "name": "2.4 Id ausente",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 400', function () {",
-                  "    pm.response.to.have.status(400);",
-                  "});",
-                  "",
-                  "pm.test('Mensaje de id obligatorio', function () {",
-                  "    pm.expect(pm.response.text()).to.eql('El id del empleado es obligatorio');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Sin\",\n  \"apellido\": \"Identificador\",\n  \"email\": \"sin.id@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-777\",\n  \"cargo\": \"Practicante\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-05-01\",\n  \"estado\": \"ACTIVO\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "Body SIN el campo id.\n\nComo ahora el id lo pone el cliente, ya no hay nada que lo genere: si no lo mandas, no hay clave con la cual guardar ni consultar. Por eso se rechaza.\n\nDa el mismo error si mandas \"id\": \"\" o \"id\": \"   \" (solo espacios).\n\nRESPUESTA 400 (texto plano):\nEl id del empleado es obligatorio"
-          },
-          "response": [
-            {
-              "name": "400 Bad Request - id ausente",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Sin\",\n  \"apellido\": \"Identificador\",\n  \"email\": \"sin.id@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-777\",\n  \"cargo\": \"Practicante\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-05-01\",\n  \"estado\": \"ACTIVO\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "El id del empleado es obligatorio"
-            }
-          ]
+          "response": []
         }
       ]
     },
     {
-      "name": "3. Recursos no encontrados (404)",
+      "name": "3. Validación (400)",
       "item": [
         {
-          "name": "3.1 Empleado inexistente",
+          "name": "3.1 Cuerpo vacío (faltan todos los campos)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 404', function () {",
-                  "    pm.response.to.have.status(404);",
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "",
+                  "const b = pm.response.json();",
+                  "pm.test('Lista los 10 campos obligatorios', () => {",
+                  "    pm.expect(b.status).to.eql(400);",
+                  "    pm.expect(b.error).to.eql('Bad Request');",
+                  "    pm.expect(b.errores).to.have.lengthOf(10);",
                   "});",
                   "",
-                  "pm.test('Cuerpo exacto con el id solicitado', function () {",
-                  "    pm.expect(pm.response.text()).to.eql('El empleado con id E999 no existe');",
+                  "console.log('Campos faltantes: ' + b.errores.map(e => e.campo).join(', '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "description": "Un objeto vacío dispara todas las validaciones a la vez. La respuesta enumera los 10 campos obligatorios en el array 'errores', cada uno con su mensaje.",
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] }
+          },
+          "response": [
+            {
+              "name": "400 Bad Request",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"timestamp\": \"2026-09-08T18:42:11.503-05:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"La solicitud contiene campos inválidos\",\n    \"path\": \"/empleados\",\n    \"errores\": [\n        { \"campo\": \"apellido\", \"mensaje\": \"El apellido es obligatorio\" },\n        { \"campo\": \"area\", \"mensaje\": \"El area es obligatoria\" },\n        { \"campo\": \"cargo\", \"mensaje\": \"El cargo es obligatorio\" },\n        { \"campo\": \"departamentoId\", \"mensaje\": \"El departamentoId es obligatorio\" },\n        { \"campo\": \"email\", \"mensaje\": \"El email es obligatorio\" },\n        { \"campo\": \"estado\", \"mensaje\": \"El estado es obligatorio\" },\n        { \"campo\": \"fechaIngreso\", \"mensaje\": \"La fechaIngreso es obligatoria\" },\n        { \"campo\": \"id\", \"mensaje\": \"El id es obligatorio\" },\n        { \"campo\": \"nombre\", \"mensaje\": \"El nombre es obligatorio\" },\n        { \"campo\": \"numeroEmpleado\", \"mensaje\": \"El numeroEmpleado es obligatorio\" }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "3.2 Falta un campo obligatorio (nombre)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "",
+                  "pm.test('Señala exactamente el campo nombre', () => {",
+                  "    const errs = pm.response.json().errores;",
+                  "    pm.expect(errs).to.have.lengthOf(1);",
+                  "    pm.expect(errs[0].campo).to.eql('nombre');",
+                  "    pm.expect(errs[0].mensaje).to.eql('El nombre es obligatorio');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"E030\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"sin.nombre@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-030\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-02-10\",\n  \"estado\": \"ACTIVO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "Body sin 'nombre'. La respuesta señala solo ese campo.\n\nDa el mismo error con \"nombre\": \"\" o \"nombre\": \"   \" (solo espacios): la validación es @NotBlank, no @NotNull."
+          },
+          "response": []
+        },
+        {
+          "name": "3.3 Email con formato inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Señala el formato del email', () => {",
+                  "    const errs = pm.response.json().errores;",
+                  "    pm.expect(errs[0].campo).to.eql('email');",
+                  "    pm.expect(errs[0].mensaje).to.eql('El email no tiene un formato válido');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"E031\",\n  \"nombre\": \"Correo\",\n  \"apellido\": \"Malo\",\n  \"email\": \"esto-no-es-un-correo\",\n  \"numeroEmpleado\": \"EMP-2026-031\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-02-10\",\n  \"estado\": \"ACTIVO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "El email está presente pero no tiene forma de correo. Lo valida @Email."
+          },
+          "response": []
+        },
+        {
+          "name": "3.4 Estado fuera del enum",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje de cuerpo ilegible', () => {",
+                  "    pm.expect(pm.response.json().message).to.include('no es un JSON válido');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"E032\",\n  \"nombre\": \"Estado\",\n  \"apellido\": \"Invalido\",\n  \"email\": \"estado.malo@empresa.com\",\n  \"numeroEmpleado\": \"EMP-2026-032\",\n  \"cargo\": \"Analista\",\n  \"area\": \"Tecnología\",\n  \"departamentoId\": \"IT\",\n  \"fechaIngreso\": \"2026-02-10\",\n  \"estado\": \"JUBILADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "JUBILADO no pertenece al enum EstadoEmpleado (ACTIVO, EN_VACACIONES, RETIRADO).\n\nEste error lo detecta Jackson al deserializar, antes de que actúe la validación, por eso el mensaje es genérico y no trae el array 'errores'.\n\nUna fechaIngreso mal formada (\"10-02-2026\") produce la misma respuesta."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Recursos no encontrados (404)",
+      "item": [
+        {
+          "name": "4.1 Empleado inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "",
+                  "const b = pm.response.json();",
+                  "pm.test('Mensaje con el id solicitado', () => {",
+                  "    pm.expect(b.status).to.eql(404);",
+                  "    pm.expect(b.message).to.eql('El empleado con id E999 no existe');",
+                  "    pm.expect(b.path).to.eql('/empleados/E999');",
                   "});"
                 ]
               }
@@ -549,47 +418,35 @@
               "host": ["{{baseUrl}}"],
               "path": ["empleados", "E999"]
             },
-            "description": "QUÉ COLOCAR: cualquier id que no hayas registrado. Aquí se usa 'E999'.\n\nRESPUESTA 404 (texto plano), con el id reflejado en el mensaje:\nEl empleado con id E999 no existe\n\nOJO: el almacenamiento es en memoria. Si reinicias el servicio, E001 también empezará a dar este mensaje hasta que lo vuelvas a registrar."
+            "description": "Cualquier id no registrado. El mensaje refleja el id pedido y 'path' la ruta consultada."
           },
           "response": [
             {
-              "name": "404 Not Found - empleado inexistente",
+              "name": "404 Not Found",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/empleados/E999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados", "E999"]
-                }
+                "url": { "raw": "{{baseUrl}}/empleados/E999", "host": ["{{baseUrl}}"], "path": ["empleados", "E999"] }
               },
               "status": "Not Found",
               "code": 404,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "El empleado con id E999 no existe"
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n    \"timestamp\": \"2026-09-08T18:42:11.503-05:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"El empleado con id E999 no existe\",\n    \"path\": \"/empleados/E999\"\n}"
             }
           ]
         },
         {
-          "name": "3.2 Ruta no definida",
+          "name": "4.2 Ruta no definida",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 404', function () {",
-                  "    pm.response.to.have.status(404);",
-                  "});",
-                  "",
-                  "pm.test(\"Cuerpo exacto 'Recurso no encontrado'\", function () {",
-                  "    pm.expect(pm.response.text()).to.eql('Recurso no encontrado');",
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"message = 'Recurso no encontrado'\", () => {",
+                  "    pm.expect(pm.response.json().message).to.eql('Recurso no encontrado');",
                   "});"
                 ]
               }
@@ -603,47 +460,21 @@
               "host": ["{{baseUrl}}"],
               "path": ["ruta-invalida"]
             },
-            "description": "QUÉ COLOCAR: cualquier ruta que el servicio no exponga: /ruta-invalida, /clientes, /empleados/E001/salario, /api/v1/loquesea...\n\nLo maneja el @ControllerAdvice de forma GLOBAL capturando NoHandlerFoundException, no ruta por ruta.\n\nRESPUESTA 404 (texto plano):\nRecurso no encontrado"
+            "description": "Cualquier ruta no expuesta: /ruta-invalida, /clientes, /api/v1/loquesea.\n\nLo maneja el @RestControllerAdvice de forma global capturando NoHandlerFoundException."
           },
-          "response": [
-            {
-              "name": "404 Not Found - ruta no definida",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/ruta-invalida",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["ruta-invalida"]
-                }
-              },
-              "status": "Not Found",
-              "code": 404,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "Recurso no encontrado"
-            }
-          ]
+          "response": []
         },
         {
-          "name": "3.3 Método HTTP no definido",
+          "name": "4.3 Método HTTP no definido",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status 404 (no 405)', function () {",
-                  "    pm.response.to.have.status(404);",
-                  "});",
-                  "",
-                  "pm.test(\"Cuerpo exacto 'Recurso no encontrado'\", function () {",
-                  "    pm.expect(pm.response.text()).to.eql('Recurso no encontrado');",
+                  "pm.test('Status 404 (no 405)', () => pm.response.to.have.status(404));",
+                  "pm.test(\"message = 'Recurso no encontrado'\", () => {",
+                  "    pm.expect(pm.response.json().message).to.eql('Recurso no encontrado');",
                   "});"
                 ]
               }
@@ -652,37 +483,10 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/empleados",
-              "host": ["{{baseUrl}}"],
-              "path": ["empleados"]
-            },
-            "description": "QUÉ COLOCAR: una ruta que SÍ existe pero con un método que no está definido.\n\n/empleados solo acepta POST. Un GET sobre esa misma ruta devolvería 405 por defecto en Spring, pero el reto exige 404 'Recurso no encontrado', así que el @ControllerAdvice también captura HttpRequestMethodNotSupportedException.\n\nOtras variantes que dan el mismo resultado:\n- DELETE {{baseUrl}}/empleados/E001\n- PUT {{baseUrl}}/empleados/E001\n\nRESPUESTA 404 (texto plano):\nRecurso no encontrado"
+            "url": { "raw": "{{baseUrl}}/empleados", "host": ["{{baseUrl}}"], "path": ["empleados"] },
+            "description": "/empleados solo acepta POST. Spring devolvería 405 por defecto; el manejador lo unifica en 404 para no revelar qué rutas existen con otros métodos.\n\nMismo resultado con DELETE o PUT sobre {{baseUrl}}/empleados/E001."
           },
-          "response": [
-            {
-              "name": "404 Not Found - método no definido",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/empleados",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["empleados"]
-                }
-              },
-              "status": "Not Found",
-              "code": 404,
-              "_postman_previewlanguage": "text",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "text/plain;charset=UTF-8"
-                }
-              ],
-              "body": "Recurso no encontrado"
-            }
-          ]
+          "response": []
         }
       ]
     }

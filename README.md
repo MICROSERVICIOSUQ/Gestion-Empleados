@@ -63,26 +63,34 @@ transversal:
 
 ## Modelo de datos
 
-| Campo | Tipo | Ejemplo | Restricciones |
-|---|---|---|---|
-| `id` | String | `E001` | **Obligatorio**, único. Lo define el cliente |
-| `nombre` | String | `Juan` | — |
-| `apellido` | String | `Pérez` | — |
-| `email` | String | `juan.perez@empresa.com` | Único (no distingue mayúsculas) |
-| `numeroEmpleado` | String | `EMP-2026-001` | Único (sí distingue mayúsculas) |
-| `cargo` | String | `Desarrollador Senior` | — |
-| `area` | String | `Tecnología` | — |
-| `departamentoId` | String | `IT` | Texto libre; no se valida contra otro servicio |
-| `fechaIngreso` | LocalDate | `2026-02-10` | Formato `yyyy-MM-dd` |
-| `estado` | Enum | `ACTIVO` | `ACTIVO` · `EN_VACACIONES` · `RETIRADO` |
+**Todos los campos son obligatorios.** La validación es declarativa (`@NotBlank`,
+`@NotNull`, `@Email`) y se dispara con `@Valid` en el controller, antes de que la
+petición llegue a la lógica de negocio.
+
+| Campo | Tipo | Ejemplo | Validación | Único |
+|---|---|---|---|---|
+| `id` | String | `E001` | `@NotBlank` | Sí |
+| `nombre` | String | `Juan` | `@NotBlank` | — |
+| `apellido` | String | `Pérez` | `@NotBlank` | — |
+| `email` | String | `juan.perez@empresa.com` | `@NotBlank` `@Email` | Sí, ignorando mayúsculas |
+| `numeroEmpleado` | String | `EMP-2026-001` | `@NotBlank` | Sí, distinguiendo mayúsculas |
+| `cargo` | String | `Desarrollador Senior` | `@NotBlank` | — |
+| `area` | String | `Tecnología` | `@NotBlank` | — |
+| `departamentoId` | String | `IT` | `@NotBlank` | — |
+| `fechaIngreso` | LocalDate | `2026-02-10` | `@NotNull`, formato `yyyy-MM-dd` | — |
+| `estado` | Enum | `ACTIVO` | `@NotNull`, uno de `ACTIVO` · `EN_VACACIONES` · `RETIRADO` | — |
+
+`@NotBlank` rechaza tanto el campo ausente como la cadena vacía o compuesta solo de
+espacios. `departamentoId` es texto libre: se exige que venga, pero no se valida
+contra ningún otro servicio.
 
 **Sobre el `id`:** no se autogenera. Lo envías en el `POST` y con ese mismo valor
 consultas en el `GET`. El formato es libre (`E001`, `EMP-1`, `juan-perez`); solo se
 valida que no venga vacío y que no exista ya.
 
-**Sobre el `estado`:** el registro lo normaliza siempre a `ACTIVO`. Puedes enviarlo u
-omitirlo; si envías `EN_VACACIONES` o `RETIRADO` se guardará igualmente como `ACTIVO`.
-No hay operaciones de transición de estado.
+**Sobre el `estado`:** es obligatorio enviarlo, pero el registro lo normaliza siempre a
+`ACTIVO`; si envías `EN_VACACIONES` o `RETIRADO` se guardará como `ACTIVO`. No hay
+operaciones de transición de estado.
 
 ---
 
@@ -94,12 +102,11 @@ Base URL por defecto: `http://localhost:8080`
 
 | Método | Ruta | Descripción | Éxito | Errores |
 |---|---|---|---|---|
-| `POST` | `/empleados` | Registrar un empleado | `200` | `400` |
+| `POST` | `/empleados` | Registrar un empleado | `200` | `400` · `409` |
 | `GET` | `/empleados/{id}` | Consultar por id | `200` | `404` |
 | *(cualquiera)* | *(cualquier otra ruta)* | — | — | `404` |
 
-Las respuestas de éxito son `application/json`. **Las respuestas de error son
-`text/plain`**, no JSON.
+Éxitos y errores se devuelven en `application/json`.
 
 ### POST /empleados
 
@@ -144,63 +151,118 @@ curl -s http://localhost:8080/empleados/E001
 ```
 
 **`200 OK`** — el JSON completo del empleado.
-**`404 Not Found`** — `El empleado con id E001 no existe`
+**`404 Not Found`** — cuerpo de error con `message: "El empleado con id E001 no existe"`.
 
 ### Catálogo de errores
 
-| HTTP | Cuerpo de la respuesta | Se produce cuando |
+Todos los errores comparten la misma forma:
+
+```json
+{
+  "timestamp": "2026-09-08T18:42:11.503-05:00",
+  "status": 409,
+  "error": "Conflict",
+  "message": "El id 'E001' ya está registrado",
+  "path": "/empleados"
+}
+```
+
+El campo `errores` se añade únicamente en los fallos de validación, con el detalle
+por campo:
+
+```json
+{
+  "timestamp": "2026-09-08T18:42:11.503-05:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "La solicitud contiene campos inválidos",
+  "path": "/empleados",
+  "errores": [
+    { "campo": "email",  "mensaje": "El email es obligatorio" },
+    { "campo": "nombre", "mensaje": "El nombre es obligatorio" }
+  ]
+}
+```
+
+| HTTP | `message` | Se produce cuando |
 |---|---|---|
-| `400` | `El id del empleado es obligatorio` | El `id` viene ausente, vacío o solo con espacios |
-| `400` | `El id 'E001' ya está registrado` | Ya existe un empleado con ese `id` |
-| `400` | `El email 'juan.perez@empresa.com' ya está registrado` | Ya existe un empleado con ese email |
-| `400` | `El número de empleado 'EMP-2026-001' ya está registrado` | Ya existe un empleado con ese `numeroEmpleado` |
+| `400` | `La solicitud contiene campos inválidos` | Falta un campo obligatorio o el email no tiene formato válido. Incluye `errores` |
+| `400` | `El cuerpo de la petición no es un JSON válido o contiene valores con formato incorrecto` | JSON con sintaxis rota, `estado` fuera del enum, o `fechaIngreso` mal formada |
+| `409` | `El id 'E001' ya está registrado` | Ya existe un empleado con ese `id` |
+| `409` | `El email 'juan.perez@empresa.com' ya está registrado` | Ya existe un empleado con ese email |
+| `409` | `El número de empleado 'EMP-2026-001' ya está registrado` | Ya existe un empleado con ese `numeroEmpleado` |
 | `404` | `El empleado con id E999 no existe` | `GET` con un `id` no registrado |
 | `404` | `Recurso no encontrado` | Ruta no definida, o método HTTP no soportado en una ruta existente |
 
-**Orden de validación:** `id` → `email` → `numeroEmpleado`. Se detiene en el primer
-conflicto, así que para provocar el error de `email` hay que enviar un `id` libre, y
-para el de `numeroEmpleado` hay que dejar libres los dos anteriores.
+**400 frente a 409.** El `400` dice que la petición está mal construida: le faltan
+datos o tienen mal formato, y reenviarla igual siempre fallará. El `409` dice que la
+petición es correcta pero choca con información que ya está en el sistema; la misma
+petición podría funcionar en otro momento o con otro identificador.
+
+**Orden de comprobación de conflictos:** `id` → `email` → `numeroEmpleado`. Se detiene
+en el primero, así que para provocar el conflicto de `email` hay que enviar un `id`
+libre, y para el de `numeroEmpleado` hay que dejar libres los dos anteriores.
+
+La validación de campos corre **antes** que las comprobaciones de unicidad: un cuerpo
+al que le falten campos devuelve `400` aunque además duplique un `id`.
 
 <details>
 <summary><b>Ejemplos curl de cada caso de error</b></summary>
 
 Partiendo de que `E001` (Juan) ya está registrado:
 
-**Id duplicado** → `El id 'E001' ya está registrado`
+**`409` — Id duplicado** (email y numeroEmpleado libres)
 ```bash
 curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
   -d '{"id":"E001","nombre":"Otro","apellido":"Empleado","email":"otro@empresa.com","numeroEmpleado":"EMP-2026-999","cargo":"Analista","area":"Ventas","departamentoId":"VT","fechaIngreso":"2026-04-01","estado":"ACTIVO"}'
 ```
 
-**Email duplicado** → `El email 'juan.perez@empresa.com' ya está registrado`
+**`409` — Email duplicado** (id libre)
 ```bash
 curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
   -d '{"id":"E010","nombre":"Pedro","apellido":"López","email":"juan.perez@empresa.com","numeroEmpleado":"EMP-2026-888","cargo":"Analista","area":"Ventas","departamentoId":"VT","fechaIngreso":"2026-04-01","estado":"ACTIVO"}'
 ```
 
-**numeroEmpleado duplicado** → `El número de empleado 'EMP-2026-001' ya está registrado`
+**`409` — numeroEmpleado duplicado** (id y email libres)
 ```bash
 curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
   -d '{"id":"E011","nombre":"Pedro","apellido":"López","email":"pedro.lopez@empresa.com","numeroEmpleado":"EMP-2026-001","cargo":"Analista","area":"Ventas","departamentoId":"VT","fechaIngreso":"2026-04-01","estado":"ACTIVO"}'
 ```
 
-**Id ausente** → `El id del empleado es obligatorio`
+**`400` — Faltan todos los campos** (devuelve los 10 en `errores`)
 ```bash
-curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
-  -d '{"nombre":"Sin","apellido":"Identificador","email":"sin.id@empresa.com","numeroEmpleado":"EMP-2026-777","cargo":"Practicante","area":"Tecnología","departamentoId":"IT","fechaIngreso":"2026-05-01","estado":"ACTIVO"}'
+curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" -d '{}'
 ```
 
-**Empleado inexistente** → `El empleado con id E999 no existe`
+**`400` — Falta un campo concreto** (aquí `nombre`)
+```bash
+curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
+  -d '{"id":"E030","apellido":"Pérez","email":"sin.nombre@empresa.com","numeroEmpleado":"EMP-2026-030","cargo":"Analista","area":"Tecnología","departamentoId":"IT","fechaIngreso":"2026-02-10","estado":"ACTIVO"}'
+```
+
+**`400` — Email con formato inválido**
+```bash
+curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
+  -d '{"id":"E031","nombre":"Correo","apellido":"Malo","email":"esto-no-es-un-correo","numeroEmpleado":"EMP-2026-031","cargo":"Analista","area":"Tecnología","departamentoId":"IT","fechaIngreso":"2026-02-10","estado":"ACTIVO"}'
+```
+
+**`400` — Estado fuera del enum**
+```bash
+curl -s -X POST http://localhost:8080/empleados -H "Content-Type: application/json" \
+  -d '{"id":"E032","nombre":"Estado","apellido":"Invalido","email":"estado.malo@empresa.com","numeroEmpleado":"EMP-2026-032","cargo":"Analista","area":"Tecnología","departamentoId":"IT","fechaIngreso":"2026-02-10","estado":"JUBILADO"}'
+```
+
+**`404` — Empleado inexistente**
 ```bash
 curl -s http://localhost:8080/empleados/E999
 ```
 
-**Ruta no definida** → `Recurso no encontrado`
+**`404` — Ruta no definida**
 ```bash
 curl -s http://localhost:8080/ruta-invalida
 ```
 
-**Método no definido** → `Recurso no encontrado`
+**`404` — Método no definido**
 ```bash
 curl -s http://localhost:8080/empleados
 ```
@@ -278,20 +340,23 @@ Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Los 9 tests de [`EmpleadoEndpointsTest`](src/test/java/com/microservicios/gestionempleados/EmpleadoEndpointsTest.java)
+Los 12 tests de [`EmpleadoEndpointsTest`](src/test/java/com/microservicios/gestionempleados/EmpleadoEndpointsTest.java)
 cubren el contrato completo:
 
 | # | Verifica |
 |---|---|
 | 1 | El `POST` conserva el `id` enviado por el cliente |
 | 2 | El `GET` recupera el empleado por ese `id` |
-| 3 | Id duplicado → `400` |
-| 4 | Email duplicado → `400` |
-| 5 | numeroEmpleado duplicado → `400` |
-| 6 | Id ausente → `400` |
-| 7 | Id inexistente → `404` con el mensaje exacto |
-| 8 | Ruta no definida → `404 Recurso no encontrado` |
-| 9 | Método no definido → `404 Recurso no encontrado` |
+| 3 | Id duplicado → `409` con cuerpo JSON completo |
+| 4 | Email duplicado → `409` |
+| 5 | numeroEmpleado duplicado → `409` |
+| 6 | Cuerpo `{}` → `400` enumerando los 10 campos obligatorios |
+| 7 | Falta un campo → `400` señalando solo ese campo |
+| 8 | Email con formato inválido → `400` |
+| 9 | Estado fuera del enum → `400` |
+| 10 | Id inexistente → `404` con `message` y `path` |
+| 11 | Ruta no definida → `404 Recurso no encontrado` |
+| 12 | Método no definido → `404 Recurso no encontrado` |
 
 Usan **MockMvc**, por lo que no levantan Tomcat ni ocupan el puerto 8080: puedes
 ejecutarlos con el servicio corriendo en paralelo. Van ordenados con `@Order` porque
@@ -315,14 +380,30 @@ la colección — pestaña *Variables*, columna **Current value**.
 ## Decisiones de diseño
 
 **El `id` lo asigna el cliente.** El servicio no genera UUIDs: recibe el `id` en el
-cuerpo y lo respeta. Esto obliga a dos validaciones que no serían necesarias con ids
+cuerpo y lo respeta. Esto obliga a dos comprobaciones que no serían necesarias con ids
 autogenerados:
 
-- **Id obligatorio.** Sin `id` no hay clave con la que guardar; además
+- **Id obligatorio** (`@NotBlank`). Sin `id` no hay clave con la que guardar; además
   `ConcurrentHashMap` no admite claves nulas y lanzaría un `500`.
-- **Id único.** `Map.put()` sobrescribe en silencio. Sin esta comprobación, un `POST`
-  con un `id` ya existente reemplazaría al empleado anterior y devolvería `200` como
-  si nada hubiera pasado.
+- **Id único** (`409`). `Map.put()` sobrescribe en silencio. Sin esta comprobación, un
+  `POST` con un `id` ya existente reemplazaría al empleado anterior y devolvería `200`
+  como si nada hubiera pasado.
+
+**La validación es declarativa y vive en el modelo.** Las anotaciones de Bean
+Validation sobre `Empleado` y el `@Valid` del controller rechazan la petición antes de
+que llegue al service. El service queda con una sola responsabilidad: las reglas que
+dependen del estado del repositorio (unicidad), que ninguna anotación puede expresar.
+
+**Los errores se devuelven en JSON, no en texto plano.** Un cuerpo estructurado
+(`timestamp`, `status`, `error`, `message`, `path`) permite que un cliente reaccione
+por código en lugar de comparar cadenas. En los fallos de validación se añade
+`errores`, con un objeto por campo, para que el formulario del cliente pueda marcar
+cada uno en su sitio en vez de mostrar un mensaje único.
+
+**Los duplicados son `409`, no `400`.** Un `400` significa que la petición está mal
+construida y reenviarla igual siempre fallará. Un duplicado es distinto: la petición
+está perfectamente formada y el problema es el estado actual del sistema, que puede
+cambiar. Esa es exactamente la semántica de `409 Conflict`.
 
 **Los 404 se resuelven de forma global.** `spring.mvc.throw-exception-if-no-handler-found=true`
 y `spring.web.resources.add-mappings=false` hacen que Spring lance
@@ -396,14 +477,9 @@ y `estado` no puede cambiarse después del registro.
 
 **`departamentoId` no se valida.** Se acepta cualquier cadena.
 
-**Solo se valida el `id`.** El resto de campos no tiene comprobación de presencia ni
-de formato: un `POST` sin `email` se acepta y lo guarda como `null`, y no se verifica
-que `email` tenga forma de correo.
-
-**Un `email` nulo almacenado rompe los registros posteriores.** Las comprobaciones de
-unicidad invocan `equalsIgnoreCase` sobre los valores ya guardados, así que si existe
-un empleado con `email` nulo, todo `POST` siguiente falla con `500`
-(`NullPointerException`). Mientras no se añada validación de entrada, hay que enviar
-siempre `email` y `numeroEmpleado`.
+**La unicidad se comprueba recorriendo la colección.** `existsByEmail` y
+`existsByNumeroEmpleado` hacen un barrido lineal sobre todos los empleados: es `O(n)`
+por cada registro. Con los volúmenes de un almacenamiento en memoria no importa, pero
+con una base de datos real esto debe ser un índice único.
 
 **Sin observabilidad.** No hay health checks, métricas ni trazas.

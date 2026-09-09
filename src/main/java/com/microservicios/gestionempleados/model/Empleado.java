@@ -1,18 +1,42 @@
 package com.microservicios.gestionempleados.model;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public class Empleado {
 
+    @NotBlank(message = "El id es obligatorio")
     private String id;
+
+    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+
+    @NotBlank(message = "El apellido es obligatorio")
     private String apellido;
+
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El email no tiene un formato válido")
     private String email;
+
+    @NotBlank(message = "El numeroEmpleado es obligatorio")
     private String numeroEmpleado;
+
+    @NotBlank(message = "El cargo es obligatorio")
     private String cargo;
+
+    @NotBlank(message = "El area es obligatoria")
     private String area;
+
+    @NotBlank(message = "El departamentoId es obligatorio")
     private String departamentoId;
+
+    @NotNull(message = "La fechaIngreso es obligatoria")
     private LocalDate fechaIngreso;
+
+    @NotNull(message = "El estado es obligatorio")
     private EstadoEmpleado estado;
 
     public Empleado() {}

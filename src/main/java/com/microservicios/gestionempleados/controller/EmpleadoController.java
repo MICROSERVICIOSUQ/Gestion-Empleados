@@ -2,6 +2,7 @@ package com.microservicios.gestionempleados.controller;
 
 import com.microservicios.gestionempleados.model.Empleado;
 import com.microservicios.gestionempleados.service.EmpleadoService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +17,7 @@ public class EmpleadoController {
     }
 
     @PostMapping
-    public ResponseEntity<Empleado> registrar(@RequestBody Empleado empleado) {
+    public ResponseEntity<Empleado> registrar(@Valid @RequestBody Empleado empleado) {
         return ResponseEntity.ok(service.registrar(empleado));
     }
 
